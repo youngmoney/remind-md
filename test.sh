@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
 function md_to_json() {
-    pandoc --to=json2md.lua -f markdown-blank_before_blockquote | python3 -m json.tool --sort-keys
+    pandoc --to=remind-md.lua -f markdown-blank_before_blockquote | python3 -m json.tool --sort-keys
 }
 
 function md_to_json_stripped() {
-    pandoc --to=json2md.lua-include_full_document -f markdown-blank_before_blockquote | python3 -m json.tool --sort-keys
+    pandoc --to=remind-md.lua-include_full_document -f markdown-blank_before_blockquote | python3 -m json.tool --sort-keys
 }
 
 function json_to_md() {
-    pandoc --from=json2md.lua --wrap=none --to=markdown
+    pandoc --from=remind-md.lua --wrap=none --to=markdown
 }
 
 function json_to_md_stripped() {
-    pandoc --from=json2md.lua-include_full_document --wrap=none --to=markdown
+    pandoc --from=remind-md.lua-include_full_document --wrap=none --to=markdown
 }
 
 function compare_to_file() {

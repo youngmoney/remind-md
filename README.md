@@ -50,13 +50,13 @@ This project leverages Pandoc and its Lua plugin ability.
 To convert from JSON representation:
 
 ```
-pandoc --from=json2md.lua --to=markdown --wrap=none
+pandoc --from=remind-md.lua --to=markdown --wrap=none
 ```
 
 To extract reminders from markdown:
 
 ```
-pandoc --to=json2md.lua -f markdown-blank_before_blockquote
+pandoc --to=remind-md.lua -f markdown-blank_before_blockquote
 ```
 
 ### Processing Existing Markdown
@@ -70,21 +70,21 @@ This means any processing can happen on the intermediate json, and the document 
 For example
 
 ```
-pandoc --to=json2md.lua -f markdown-blank_before_blockquote | my_processer | pandoc --from=json2md.lua --to=markdown --wrap=none
+pandoc --to=remind-md.lua -f markdown-blank_before_blockquote | my_processer | pandoc --from=remind-md.lua --to=markdown --wrap=none
 ```
 
-To control this, you can disable the extension by disabling `json2md.lua-include_full_document`.
+To control this, you can disable the extension by disabling `remind-md.lua-include_full_document`.
 
 For example
 
 ```
-pandoc --to=json2md.lau-include_full_document -f markdown-blank_before_blockquote
+pandoc --to=remind-md.lau-include_full_document -f markdown-blank_before_blockquote
 ```
 
 will produce json with only the reminders. And
 
 ```
-pandoc --from=json2md.lua-include_full_document --to=markdown --wrap=none
+pandoc --from=remind-md.lua-include_full_document --to=markdown --wrap=none
 ```
 
 will produce markdown from only the reminders, ignoring any pandoc in the json.
