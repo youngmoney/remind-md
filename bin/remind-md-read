@@ -1,3 +1,12 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-pandoc --to=remind-md.lua -f markdown-blank_before_blockquote "$@"
+function location() {
+    local location="$(cd $(dirname $([ -L "${BASH_SOURCE}" ] && readlink "${BASH_SOURCE}" || echo "${BASH_SOURCE}")) && pwd)"
+    if [ -L "${location}" ]; then
+        readlink "${location}"
+    else
+        echo "${location}"
+    fi
+}
+
+pandoc --to=$(location)/../remind-md.lua -f markdown-blank_before_blockquote "$@"

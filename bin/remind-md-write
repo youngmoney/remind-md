@@ -1,3 +1,12 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-pandoc --from=remind-md.lua --wrap=none --to=markdown "$@"
+function location() {
+    local location="$(cd $(dirname $([ -L "${BASH_SOURCE}" ] && readlink "${BASH_SOURCE}" || echo "${BASH_SOURCE}")) && pwd)"
+    if [ -L "${location}" ]; then
+        readlink "${location}"
+    else
+        echo "${location}"
+    fi
+}
+
+pandoc --from=$(location)/../remind-md.lua --wrap=none --to=markdown "$@"
