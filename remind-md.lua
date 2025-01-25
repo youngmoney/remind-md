@@ -1,18 +1,8 @@
 local json = require 'pandoc.json'
 
-Extensions = {
-    include_full_document = true
-}
-
-local function read_inlines(raw)
-  local doc = pandoc.read(raw, "commonmark")
-  return pandoc.utils.blocks_to_inlines(doc.blocks)
-end
-
-local function read_blocks(raw)
-  local doc = pandoc.read(raw, "commonmark")
-  return doc.blocks
-end
+--
+-- General Utils
+--
 
 local function sorted_keys(arr)
   local keys = {}
@@ -22,6 +12,38 @@ local function sorted_keys(arr)
   table.sort(keys)
   return keys
 end
+
+function ErrorOut(e)
+  io.stderr:write(e .. '\n')
+  os.exit(1)
+end
+
+function getOrError(table, key)
+    value = table[key]
+    if value == nil then
+        ErrorOut("missing key: " .. key)
+    end
+    return value
+end
+
+function getOrCreate(table, key)
+    if table[key] == nil then
+        table[key] = {}
+    end
+    return table[key]
+end
+
+--
+-- Global Settings
+--
+
+Extensions = {
+    include_full_document = true
+}
+
+--
+-- Reader (from JSON)
+--
 
 local function getListFromBulletList(cb)
     if cb.c[1] == nil or cb.c[1][1] == nil or cb.c[1][1].t ~= "Plain" then
@@ -45,35 +67,48 @@ end
 function Reader(input, opts)
   local blocks = {}
   table.insert(blocks, pandoc.Header(1, "Reminders"))
+  local generatedAccounts = {}
 
   local all = json.decode(tostring(input), false)
+  if all == nil then
+      ErrorOut("invalid json")
+  end
   unorderedaccounts = all["reminders"]
-  accounts = sorted_keys(unorderedaccounts)
+  if unorderedaccounts == nil then
+      ErrorOut("reminders not found in input")
+  end
 
-  generatedAccounts = {}
+  accounts = sorted_keys(unorderedaccounts)
   for i = 1, #accounts do
     local account, unorderedlists = accounts[i], unorderedaccounts[accounts[i]]
+    if unorderedlists == nil then
+        ErrorOut("invalid account: " .. account)
+    end
     table.insert(blocks, pandoc.Header(2, account))
     lists = sorted_keys(unorderedlists)
     for j = 1, #lists do
         local list, reminders = lists[j], unorderedlists[lists[j]]
+        if reminders == nil then
+            ErrorOut("invalid list: " .. list)
+        end
         table.insert(blocks, pandoc.Header(3, list))
         reminderList = {}
         for _, reminder in ipairs(reminders) do
             items = {}
 
             title = {}
-            if reminder.completed then
+            if getOrError(reminder, "completed") then
                 table.insert(title, pandoc.Str("☒"))
             else
                 table.insert(title, pandoc.Str("☐"))
             end
-            if reminder.priority > 0 then
+            priority = getOrError(reminder, "priority")
+            if priority > 0 then
                 table.insert(title, pandoc.Space())
-                table.insert(title, pandoc.Str(string.rep("!", reminder.priority)))
+                table.insert(title, pandoc.Str(string.rep("!", priority)))
             end
             table.insert(title, pandoc.Space())
-            table.insert(title, pandoc.Str(reminder.title))
+            table.insert(title, pandoc.Str(getOrError(reminder, "title")))
 
             if reminder["dueDate"] ~= nil then
                 table.insert(title, pandoc.Space())
@@ -97,10 +132,7 @@ function Reader(input, opts)
         end
         generated = pandoc.BulletList(reminderList)
         table.insert(blocks, generated)
-        if generatedAccounts[account] == nil then
-            generatedAccounts[account] = {}
-        end
-        local a = generatedAccounts[account]
+        local a = getOrCreate(generatedAccounts, account)
         a[list] = generated
     end
   end
@@ -125,14 +157,14 @@ function Reader(input, opts)
           return cb
       end
   }
+  -- TODO: add the leftover lists
   return doc:walk(addLists)
 
 end
 
-function ErrorOut(e)
-  io.stderr:write(e .. '\n')
-  os.exit(1)
-end
+--
+-- Writer (to JSON)
+--
 
 function getPriority(s)
     if s == "!" then
@@ -286,10 +318,7 @@ function Writer (doc, opts)
       if p == nil then
           return cb
       end
-      if accounts[accountname] == nil then
-          accounts[accountname] = {}
-      end
-      account = accounts[accountname]
+      account = getOrCreate(accounts, accountname)
       if account[listname] ~= nil then
           ErrorOut("a single list (H3) can only exist once: " .. listname)
       end
