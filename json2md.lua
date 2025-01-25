@@ -1,5 +1,9 @@
 local json = require 'pandoc.json'
 
+Extensions = {
+    include_full_document = true
+}
+
 local function read_inlines(raw)
   local doc = pandoc.read(raw, "commonmark")
   return pandoc.utils.blocks_to_inlines(doc.blocks)
@@ -38,8 +42,7 @@ local function getListFromBulletList(cb)
     return attrs
 end
 
-function Reader(input)
-
+function Reader(input, opts)
   local blocks = {}
   table.insert(blocks, pandoc.Header(1, "Reminders"))
 
@@ -102,11 +105,10 @@ function Reader(input)
     end
   end
 
-  if all["pandoc-api-version"] == nil then
+  local add_all = opts.extensions:includes 'include_full_document'
+  if all["pandoc-api-version"] == nil or add_all == false  then
       return pandoc.Pandoc(blocks)
   end
-
-  print("going for it")
 
   all["reminders"] = nil
   doc = json.decode(json.encode(all))
@@ -297,7 +299,12 @@ function Writer (doc, opts)
       return pandoc.BulletList(listspan)
     end
   }
-  local jwrite = pandoc.write(doc:walk(filter), 'json', opts)
+  walked = doc:walk(filter)
+  add_all = opts.extensions:includes 'include_full_document'
+  if add_all == false then
+      return json.encode({reminders=accounts})
+  end
+  local jwrite = pandoc.write(walked, 'json', opts)
   local de = json.decode(jwrite, false)
   de["reminders"] = accounts
   return json.encode(de)

@@ -73,6 +73,22 @@ For example
 pandoc --to=json2md.lua -f markdown-blank_before_blockquote | my_processer | pandoc --from=json2md.lua --to=markdown --wrap=none
 ```
 
+To control this, you can disable the extension by disabling `json2md.lua-include_full_document`.
+
+For example
+
+```
+pandoc --to=json2md.lau -f markdown-blank_before_blockquote -t json2md.lua-include_full_document
+```
+
+will produce json with only the reminders. And
+
+```
+pandoc --from=json2md.lua --to=markdown --wrap=none -f json2md.lua-include_full_document
+```
+
+will produce markdown from only the reminders, ignoring any pandoc in the json.
+
 ## Markdown Spec
 
 ### Reminder List
