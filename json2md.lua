@@ -52,7 +52,7 @@ function Reader(input)
 
             if reminder["dueDate"] ~= nil then
                 table.insert(title, pandoc.Space())
-                if reminder["recurrance"] ~= nil then
+                if reminder["recurrence"] ~= nil then
                     table.insert(title, pandoc.Span(reminder.dueDate, {class = "due", rrule = reminder.recurrance}))
                 else
                     table.insert(title, pandoc.Span(reminder.dueDate, {class = "due"}))
@@ -74,15 +74,150 @@ function Reader(input)
     end
   end
 
-  -- for _,entry in ipairs(parsed.data.children) do
-  --   local d = entry.data
-  --   table.insert(blocks, pandoc.Header(2,
-  --                 pandoc.Link(read_inlines(d.title), d.url)))
-  --   for _,block in ipairs(read_blocks(d.selftext)) do
-  --     table.insert(blocks, block)
-  --   end
-  -- end
-
   return pandoc.Pandoc(blocks)
 
+end
+
+function ErrorOut(e)
+  io.stderr:write(e)
+  os.exit(1)
+end
+
+function getPriority(s)
+    if s == "!" then
+        return 1
+    end
+    if s == "!!" then
+        return 2
+    end
+    if s == "!!!" then
+        return 3
+    end
+    return nil
+end
+
+function rtrim(s)
+  return s:match'^(.*%S)%s*$'
+end
+
+function asMarkdown(block)
+    s = pandoc.write(pandoc.Pandoc(block), 'markdown')
+    return rtrim(s)
+end
+
+function asPlain(block)
+    return rtrim(pandoc.write(pandoc.Pandoc(block), 'plain'))
+end
+
+function isDue(block)
+    if block.attr ~= nil and #block.attr.classes > 0 and  block.attr.classes[1] == "due" then
+        return true
+    end
+    return false
+end
+
+function isCompleted(block)
+    if block.attr ~= nil and #block.attr.classes > 0 and  block.attr.classes[1] == "completed" then
+        return true
+    end
+    return false
+end
+
+function ProcessTodo(item)
+    completed = false
+    priority = 0
+    titleParts = {}
+    due = nil
+    recurrence = nil
+    completion = nil
+    notes = nil
+
+    for i = 1, #item do
+        cb = item[i]
+        if i == 1 then
+            if cb.t ~= "Para" then
+                ErrorOut("reminder does not start with a Para block")
+            end
+            for j = 1, #cb.c do
+                block = cb.c[j]
+                if j == 1 then
+                    if block.t == "Str" and block.text == "☐" then
+                        completed = false
+                    elseif block.t == "Str" and block.text == "☒" then
+                        completed = true
+                    else
+                      -- ErrorOut("expected a checkbox as the first item")
+                    end
+                elseif j == 2 then
+                    if block.t ~= "Space" then
+                      ErrorOut("expected a space after the checkbox ")
+                    end
+                elseif j == 3 and getPriority(block.text) ~= nil then
+                    priority = getPriority(block.text)
+                else
+                    if isDue(block) then
+                        due = asPlain(block)
+                        if block.attr.attributes["rrule"] ~= nil then
+                            recurrence = block.attr.attributes["rrule"]
+                        end
+                    elseif isCompleted(block) then
+                        completed = true
+                        completion = asPlain(block)
+                    else
+                        table.insert(titleParts, block)
+                    end
+                end
+            end
+        elseif i == 2 then
+            if cb.t ~= "BlockQuote" then
+                -- BlockQuote should always directly follow the reminder list item line
+                ErrorOut("expceted BlockQuote (-f markdown-blank_before_blockquote)")
+            end
+            notes = asMarkdown(cb.c)
+        else
+          ErrorOut("unexpected extra blocks in reminder")
+        end
+    end
+    reminder = {
+        completed = completed,
+        priority = priority,
+        title = asMarkdown(pandoc.Para(titleParts))
+    }
+    if due ~= nil then
+        reminder["dueDate"] = due
+    end
+    if recurrence ~= nil then
+        reminder["recurrence"] = recurrence
+    end
+    if completion ~= nil then
+        reminder["completionDate"] = completion
+    end
+    if notes ~= nil then
+        reminder["notes"] = notes
+    end
+    return reminder
+end
+
+function ProcessReminderList(list)
+    l = {}
+    for i = 1, #list.c do
+        r = ProcessTodo(list.c[i])
+        table.insert(l, r)
+    end
+    return l
+end
+
+
+function Writer (doc, opts)
+  local lists = {}
+  local filter = {
+    BulletList = function (cb)
+      table.insert(lists, ProcessReminderList(cb))
+      return pandoc.BulletList({pandoc.Str('reminder-list:' .. tostring(#lists))})
+    end
+  }
+  local jwrite = pandoc.write(doc:walk(filter), 'json', opts)
+  local de = json.decode(jwrite, false)
+  de["reminders"] = lists
+  return json.encode(de)
 end
