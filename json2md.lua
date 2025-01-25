@@ -19,13 +19,35 @@ local function sorted_keys(arr)
   return keys
 end
 
+local function getListFromBulletList(cb)
+    if cb.c[1] == nil or cb.c[1][1] == nil or cb.c[1][1].t ~= "Plain" then
+        return nil
+    end
+    local plain = cb.c[1][1]
+    if plain.c[1] == nil or plain.c[1].t ~= "Span" then
+        return nil
+    end
+    local span = plain.c[1]
+    if span.attr == nil or span.attr.attributes == nil then
+        return nil
+    end
+    local attrs = span.attr.attributes
+    if attrs["list"] == nil or attrs["account"] == nil then
+        return nil
+    end
+    return attrs
+end
+
 function Reader(input)
 
   local blocks = {}
   table.insert(blocks, pandoc.Header(1, "Reminders"))
 
-  local unorderedaccounts = json.decode(tostring(input))
+  local all = json.decode(tostring(input), false)
+  unorderedaccounts = all["reminders"]
   accounts = sorted_keys(unorderedaccounts)
+
+  generatedAccounts = {}
   for i = 1, #accounts do
     local account, unorderedlists = accounts[i], unorderedaccounts[accounts[i]]
     table.insert(blocks, pandoc.Header(2, account))
@@ -53,7 +75,7 @@ function Reader(input)
             if reminder["dueDate"] ~= nil then
                 table.insert(title, pandoc.Space())
                 if reminder["recurrence"] ~= nil then
-                    table.insert(title, pandoc.Span(reminder.dueDate, {class = "due", rrule = reminder.recurrance}))
+                    table.insert(title, pandoc.Span(reminder.dueDate, {class = "due", rrule = reminder.recurrence}))
                 else
                     table.insert(title, pandoc.Span(reminder.dueDate, {class = "due"}))
                 end
@@ -70,16 +92,45 @@ function Reader(input)
             end
             table.insert(reminderList, items)
         end
-        table.insert(blocks, pandoc.BulletList(reminderList))
+        generated = pandoc.BulletList(reminderList)
+        table.insert(blocks, generated)
+        if generatedAccounts[account] == nil then
+            generatedAccounts[account] = {}
+        end
+        local a = generatedAccounts[account]
+        a[list] = generated
     end
   end
 
-  return pandoc.Pandoc(blocks)
+  if all["pandoc-api-version"] == nil then
+      return pandoc.Pandoc(blocks)
+  end
+
+  print("going for it")
+
+  all["reminders"] = nil
+  doc = json.decode(json.encode(all))
+  local addLists = {
+      BulletList = function(cb)
+          list = getListFromBulletList(cb)
+          print(cb)
+          print(list)
+          if list ~= nil then
+              if generatedAccounts[list.account] ~= nil then
+                  if generatedAccounts[list.account][list.list] ~= nil then
+                      return generatedAccounts[list.account][list.list]
+                  end
+              end
+          end
+          return cb
+      end
+  }
+  return doc:walk(addLists)
 
 end
 
 function ErrorOut(e)
-  io.stderr:write(e)
+  io.stderr:write(e .. '\n')
   os.exit(1)
 end
 
@@ -135,8 +186,8 @@ function ProcessTodo(item)
     for i = 1, #item do
         cb = item[i]
         if i == 1 then
-            if cb.t ~= "Para" then
-                ErrorOut("reminder does not start with a Para block")
+            if cb.t ~= "Para" and cb.t ~= "Plain" then
+                ErrorOut("reminder does not start with a Para block: " .. tostring(cb))
             end
             for j = 1, #cb.c do
                 block = cb.c[j]
@@ -146,7 +197,7 @@ function ProcessTodo(item)
                     elseif block.t == "Str" and block.text == "☒" then
                         completed = true
                     else
-                      -- ErrorOut("expected a checkbox as the first item")
+                        return nil
                     end
                 elseif j == 2 then
                     if block.t ~= "Space" then
@@ -202,6 +253,12 @@ function ProcessReminderList(list)
     l = {}
     for i = 1, #list.c do
         r = ProcessTodo(list.c[i])
+        if r == nil then
+            if #l > 1 then
+                ErrorOut("reminder list has a non-first item that is not a reminder: " .. asPlain(list.c[i]))
+            end
+            return nil
+        end
         table.insert(l, r)
     end
     return l
@@ -209,15 +266,39 @@ end
 
 
 function Writer (doc, opts)
-  local lists = {}
+  local accounts = {}
+  local accountname = ""
+  local listname = ""
   local filter = {
+    Header = function (cb)
+        if cb.level == 2 then
+            accountname = asPlain(cb)
+            listname = ""
+        end
+        if cb.level == 3 then
+            listname = asPlain(cb)
+        end
+    end,
     BulletList = function (cb)
-      table.insert(lists, ProcessReminderList(cb))
-      return pandoc.BulletList({pandoc.Str('reminder-list:' .. tostring(#lists))})
+      local p = ProcessReminderList(cb)
+      if p == nil then
+          return cb
+      end
+      if accounts[accountname] == nil then
+          accounts[accountname] = {}
+      end
+      account = accounts[accountname]
+      if account[listname] ~= nil then
+          ErrorOut("a single list (H3) can only exist once: " .. listname)
+      end
+      account[listname] = p
+      local spanattrs = {class="reminder-list", account=accountname, list=listname}
+      local listspan = pandoc.Span(accountname .. " > " .. listname, spanattrs)
+      return pandoc.BulletList(listspan)
     end
   }
   local jwrite = pandoc.write(doc:walk(filter), 'json', opts)
   local de = json.decode(jwrite, false)
-  de["reminders"] = lists
+  de["reminders"] = accounts
   return json.encode(de)
 end
