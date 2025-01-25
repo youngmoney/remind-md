@@ -119,12 +119,14 @@ notes
 #### Example
 
 ```
-- [ ] ! urgently due [1999-12-31 23:59]{.due rrule="FREQ=YEARLY;INTERVAL=1000"}
+-   [ ] ! urgently due [1999-12-31 23:59]{.due rrule="FREQ=YEARLY;INTERVAL=1000"}
   > Before the millenium is up!
-- [x] completed item [999-12-31 23:59]{.completion}
+-   [x] completed item [999-12-31 23:59]{.completion}
 ```
 
-### Caveats
+### Details
+
+Pandoc converts bulleted lists to `-   ` as the prefix: `dash` `space` `space` `space` (3 spaces).
 
 The hierarchy is H2 > H3 > BulletList. This maps to many other pieces of software with Account > List > Items
 

@@ -115,8 +115,6 @@ function Reader(input, opts)
   local addLists = {
       BulletList = function(cb)
           list = getListFromBulletList(cb)
-          print(cb)
-          print(list)
           if list ~= nil then
               if generatedAccounts[list.account] ~= nil then
                   if generatedAccounts[list.account][list.list] ~= nil then
@@ -159,7 +157,9 @@ function asMarkdown(block)
 end
 
 function asPlain(block)
-    return rtrim(pandoc.write(pandoc.Pandoc(block), 'plain'))
+    p = rtrim(pandoc.write(pandoc.Pandoc(block), 'plain'))
+    if p == nil then p = "" end
+    return p
 end
 
 function isDue(block)
