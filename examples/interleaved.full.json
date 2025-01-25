@@ -126,11 +126,11 @@
                                         ],
                                         [
                                             [
-                                                "list",
+                                                "account",
                                                 ""
                                             ],
                                             [
-                                                "account",
+                                                "list",
                                                 ""
                                             ]
                                         ]
@@ -195,12 +195,12 @@
                                         ],
                                         [
                                             [
-                                                "list",
-                                                ""
-                                            ],
-                                            [
                                                 "account",
                                                 "Group Name"
+                                            ],
+                                            [
+                                                "list",
+                                                ""
                                             ]
                                         ]
                                     ],
@@ -305,12 +305,12 @@
                                         ],
                                         [
                                             [
-                                                "list",
-                                                "List Name"
-                                            ],
-                                            [
                                                 "account",
                                                 "Group Name"
+                                            ],
+                                            [
+                                                "list",
+                                                "List Name"
                                             ]
                                         ]
                                     ],
@@ -419,46 +419,7 @@
                                 "t": "Str"
                             }
                         ],
-                        "t": "Para"
-                    }
-                ],
-                [
-                    {
-                        "c": [
-                            {
-                                "c": "or",
-                                "t": "Str"
-                            },
-                            {
-                                "t": "Space"
-                            },
-                            {
-                                "c": "one",
-                                "t": "Str"
-                            },
-                            {
-                                "t": "Space"
-                            },
-                            {
-                                "c": "with",
-                                "t": "Str"
-                            },
-                            {
-                                "t": "Space"
-                            },
-                            {
-                                "c": "a",
-                                "t": "Str"
-                            },
-                            {
-                                "t": "Space"
-                            },
-                            {
-                                "c": "star",
-                                "t": "Str"
-                            }
-                        ],
-                        "t": "Para"
+                        "t": "Plain"
                     }
                 ]
             ],
@@ -557,12 +518,12 @@
                                         ],
                                         [
                                             [
-                                                "list",
-                                                ""
-                                            ],
-                                            [
                                                 "account",
                                                 "Another Section"
+                                            ],
+                                            [
+                                                "list",
+                                                ""
                                             ]
                                         ]
                                     ],

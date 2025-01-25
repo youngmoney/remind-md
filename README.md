@@ -78,13 +78,13 @@ To control this, you can disable the extension by disabling `json2md.lua-include
 For example
 
 ```
-pandoc --to=json2md.lau -f markdown-blank_before_blockquote -t json2md.lua-include_full_document
+pandoc --to=json2md.lau-include_full_document -f markdown-blank_before_blockquote
 ```
 
 will produce json with only the reminders. And
 
 ```
-pandoc --from=json2md.lua --to=markdown --wrap=none -f json2md.lua-include_full_document
+pandoc --from=json2md.lua-include_full_document --to=markdown --wrap=none
 ```
 
 will produce markdown from only the reminders, ignoring any pandoc in the json.
