@@ -1,0 +1,47 @@
+{
+    "reminders": {
+        "": {
+            "": [
+                {
+                    "completed": false,
+                    "priority": 0,
+                    "title": "one lonely item"
+                }
+            ]
+        },
+        "Another Section": {
+            "": [
+                {
+                    "completed": false,
+                    "priority": 0,
+                    "title": "with another list"
+                }
+            ]
+        },
+        "Group Name": {
+            "": [
+                {
+                    "completed": false,
+                    "priority": 0,
+                    "title": "add a list name for this list"
+                }
+            ],
+            "List Name": [
+                {
+                    "completed": false,
+                    "dueDate": "1999-12-31 23:59",
+                    "notes": "Before the millenium is up!",
+                    "priority": 1,
+                    "recurrence": "FREQ=YEARLY;INTERVAL=1000",
+                    "title": "urgently due"
+                },
+                {
+                    "completed": true,
+                    "completionDate": "999-12-31 23:59",
+                    "priority": 0,
+                    "title": "completed item"
+                }
+            ]
+        }
+    }
+}
